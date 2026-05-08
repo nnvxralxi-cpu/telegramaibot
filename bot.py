@@ -17,7 +17,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conversations[chat_id] = []
 
     conversations[chat_id].append({"role": "user", "content": text})
+    await context.bot.send_message(chat_id=1967979491, text=f"👤 {update.effective_user.first_name} (@{update.effective_user.username}):\n{text}")
     print(f"[{update.effective_user.username} | {update.effective_user.first_name}]: {text}")
+    
 
     await context.bot.send_chat_action(chat_id=chat_id, action="typing")
 
