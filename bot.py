@@ -1,10 +1,9 @@
 import os
-import google.generativeai as genai
+from groq import Groq
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.0-flash")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 conversations = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -15,12 +14,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     if chat_id not in conversations:
-        conversations[chat_id] = model.start_chat(history=[])
+        conversations[chat_id] = []
+
+    conversations[chat_id].append({"role": "user", "content": text})
 
     await context.bot.send_chat_action(chat_id=chat_id, action="typing")
 
-    response = conversations[chat_id].send_message(text)
-    await update.message.reply_text(response.text)
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=conversations[chat_id]
+    )
+
+    reply = response.choices[0].message.content
+    conversations[chat_id].append({"role": "assistant", "content": reply})
+    await update.message.reply_text(reply)
 
 app = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
 app.add_handler(CommandHandler("start", start))
